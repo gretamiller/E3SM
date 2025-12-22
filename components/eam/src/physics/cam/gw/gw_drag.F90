@@ -419,6 +419,18 @@ subroutine gw_init(pbuf2d)
           'U tendency - orographic gravity wave drag')
      call addfld ('VTGWORO',(/ 'lev' /), 'A','m/s2', &
           'V tendency - orographic gravity wave drag')
+     call addfld ('TTGWORO_ML',(/ 'lev' /), 'A','K/s', &
+          'T tendency - orographic gravity wave drag')
+     call addfld ('UTGWORO_ML',(/ 'lev' /), 'A','m/s2', &
+          'U tendency - orographic gravity wave drag')
+     call addfld ('VTGWORO_ML',(/ 'lev' /), 'A','m/s2', &
+          'V tendency - orographic gravity wave drag')
+     call addfld ('QTGWORO_VAP_ML',(/ 'lev' /), 'A','s-1', &
+             'Q vapor tendency - orographic gravity wave drag')
+     call addfld ('QTGWORO_LIQ_ML',(/ 'lev' /), 'A','s-1', &
+             'Q liquid tendency - orographic gravity wave drag')
+     call addfld ('QTGWORO_ICE_ML',(/ 'lev' /), 'A','s-1', &
+             'Q ice tendency - orographic gravity wave drag')
      call addfld ('TAUGWX',horiz_only,    'A','N/m2', &
           'Zonal gravity wave surface stress')
      call addfld ('TAUGWY',horiz_only,    'A','N/m2', &
@@ -694,6 +706,8 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   real(r8) :: ttgw(state%ncol,pver) ! temperature tendency
   real(r8) :: utgw(state%ncol,pver) ! zonal wind tendency
   real(r8) :: vtgw(state%ncol,pver) ! meridional wind tendency
+
+  real(r8) :: ttgw_ml(state%ncol,pver) ! temperature tendency  
 
   real(r8) :: ni(state%ncol,0:pver) ! interface Brunt-Vaisalla frequency
   real(r8) :: nm(state%ncol,pver)   ! midpoint Brunt-Vaisalla frequency
@@ -1006,6 +1020,10 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
       use_od_ls .or.&
       use_od_bl .or.&
       use_od_ss) then
+
+     call outfld('UTGWORO_ML', utgw,  ncol, lchnk)
+     call outfld('VTGWORO_ML', vtgw,  ncol, lchnk)
+
      if(.not. use_gw_energy_fix) then
         !original
         do k = 1, pver
@@ -1051,10 +1069,25 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         end do
      end do
 
+     !Keep original units for ttgw
+     if(.not. use_gw_energy_fix) then
+        do k = 1, pver
+           ttgw_ml(:,k) = ttgw(:,k) * cpairv(:ncol, k, lchnk)
+        enddo
+     else
+        do k = 1, pver
+           ttgw_ml(:ncol,k) = ttgw(:ncol,k) * cpairv(:ncol, k, lchnk)
+        enddo
+     end if
+
      ! Write output fields to history file
      call outfld('UTGWORO', utgw,  ncol, lchnk)
      call outfld('VTGWORO', vtgw,  ncol, lchnk)
      call outfld('TTGWORO', ttgw,  ncol, lchnk)
+     call outfld('TTGWORO_ML', ttgw_ml, ncol, lchnk)
+     call outfld('QTGWORO_VAP_ML', qtgw(:,:,1), ncol, lchnk)
+     call outfld('QTGWORO_LIQ_ML', qtgw(:,:,2), ncol, lchnk)
+     call outfld('QTGWORO_ICE_ML', qtgw(:,:,3), ncol, lchnk)
      !
      if (use_gw_oro) then
      !old gwd scheme
