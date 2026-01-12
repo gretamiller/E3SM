@@ -900,7 +900,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
              pint, dpm, u, v, ptend%u, ptend%v, ptend%s, utgw, vtgw, ttgw)
 
         call gw_spec_outflds(beres_pf, lchnk, ncol, pgwv, c, u, v, &
-             xv, yv, gwut, dttdf, dttke, tau(:,:,1:), utgw, vtgw, taucd, state)
+             xv, yv, gwut, dttdf, dttke, tau(:,:,1:), utgw, vtgw, qtgw, taucd, state)
 
         ! Note: This is probably redundant, because ZMDT is already being
         ! output...
@@ -963,7 +963,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
              pint, dpm, u, v, ptend%u, ptend%v, ptend%s, utgw, vtgw, ttgw)
 
         call gw_spec_outflds(cm_pf, lchnk, ncol, pgwv, c, u, v, &
-             xv, yv, gwut, dttdf, dttke, tau(:,:,1:), utgw, vtgw, taucd, state)
+             xv, yv, gwut, dttdf, dttke, tau(:,:,1:), utgw, vtgw, qtgw, taucd, state)
 
         call outfld ('FRONTGF', frontgf, pcols, lchnk)
         call outfld ('FRONTGFA', frontga, pcols, lchnk)
@@ -1168,6 +1168,24 @@ subroutine gw_spec_addflds(prefix, scheme, history_waccm)
   call addfld (trim(prefix)//'VTGWSPEC',(/ 'lev' /), 'A','m/s2', &
        trim(scheme)//' V tendency - gravity wave spectrum')
 
+  ! Wind tendencies for ML training.
+  call addfld (trim(prefix)//'UTGWSPEC_ML',(/ 'lev' /), 'A','m/s2', &
+       trim(scheme)//' U tendency - gravity wave spectrum')
+  call addfld (trim(prefix)//'VTGWSPEC_ML',(/ 'lev' /), 'A','m/s2', &
+       trim(scheme)//' V tendency - gravity wave spectrum')
+
+  ! Temperature tendencies for ML training.
+  call addfld (trim(prefix)//'TTGWSPEC_ML',(/ 'lev' /), 'A','K/s', &
+       trim(scheme)//' T tendency - gravity wave spectrum')
+
+  ! Constituens tendencies for ML training.
+  call addfld (trim(prefix)//'QTGWSPEC_VAP_ML',(/ 'lev' /), 'A','s-1', &
+       trim(scheme)//' Q vapor tendency - gravity wave spectrum')
+  call addfld (trim(prefix)//'QTGWSPEC_LIQ_ML',(/ 'lev' /), 'A','s-1', &
+       trim(scheme)//' Q liquid tendency - gravity wave spectrum')
+  call addfld (trim(prefix)//'QTGWSPEC_ICE_ML',(/ 'lev' /), 'A','s-1', &
+       trim(scheme)//' Q ice tendency - gravity wave spectrum')
+
   ! Wind tendencies broken across five spectral bins.
   call addfld (trim(prefix)//'UTEND1',  (/ 'lev' /), 'A','m/s2', &
        trim(scheme)//' U tendency   c < -40')
@@ -1250,7 +1268,7 @@ end subroutine gw_spec_addflds
 
 ! Outputs for spectral waves.
 subroutine gw_spec_outflds(prefix, lchnk, ncol, ngwv, c, u, v, xv, yv, &
-     gwut, dttdf, dttke, tau, utgw, vtgw, taucd, state)
+     gwut, dttdf, dttke, tau, utgw, vtgw, qtgw, taucd, state)
 
   use gw_common, only: west, east, south, north
   use interpolate_data, only: vertinterp
@@ -1280,6 +1298,8 @@ subroutine gw_spec_outflds(prefix, lchnk, ncol, ngwv, c, u, v, xv, yv, &
   ! Zonal and meridional total wind tendencies.
   real(r8), intent(in) :: utgw(ncol,pver)
   real(r8), intent(in) :: vtgw(ncol,pver)
+  ! Constituent tendencies
+  real(r8), intent(in) :: qtgw(ncol,pver,pcnst)
   ! Reynolds stress for waves propagating in each cardinal direction.
   real(r8), intent(in) :: taucd(ncol,0:pver,4)
   type(physics_state), intent(in) :: state      ! physics state structure
@@ -1439,6 +1459,18 @@ subroutine gw_spec_outflds(prefix, lchnk, ncol, ngwv, c, u, v, xv, yv, &
   ! Total wind tendencies.
   call outfld (trim(prefix)//'UTGWSPEC', utgw , ncol, lchnk)
   call outfld (trim(prefix)//'VTGWSPEC', vtgw , ncol, lchnk)
+
+  ! Total wind tendencies for ML training.
+  call outfld (trim(prefix)//'UTGWSPEC_ML', utgw , ncol, lchnk)
+  call outfld (trim(prefix)//'VTGWSPEC_ML', vtgw , ncol, lchnk)
+
+  ! Temperature tendencies for ML training.
+  call outfld (trim(prefix)//'TTGWSPEC_ML', dttdf+dttke , ncol, lchnk)
+       
+  ! Constituents tendencies for ML training.
+  call outfld (trim(prefix)//'QTGWSPEC_VAP_ML', qtgw(:,:,1) , ncol, lchnk)
+  call outfld (trim(prefix)//'QTGWSPEC_LIQ_ML', qtgw(:,:,2) , ncol, lchnk)
+  call outfld (trim(prefix)//'QTGWSPEC_ICE_ML', qtgw(:,:,3) , ncol, lchnk)
 
   ! Tau in each direction.
   call outfld (trim(prefix)//'TAUE', taucd(:,:,east), ncol, lchnk)
