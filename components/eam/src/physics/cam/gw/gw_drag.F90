@@ -570,6 +570,28 @@ subroutine gw_init(pbuf2d)
   call addfld ('TTGW',(/ 'lev' /), 'A','K/s', &
        'T tendency - gravity wave drag')
 
+  ! State variables needed for ML training
+  call addfld ('U_ML',(/ 'lev' /), 'A','m/s', &
+       'U variable - zonal wind')
+  call addfld ('V_ML',(/ 'lev' /), 'A','m/s', &
+       'V variable - meridional wind')
+  call addfld ('T_ML',(/ 'lev' /), 'A','K', &
+       'T variable - temperature')
+  call addfld ('Q_VAP_ML',(/ 'lev' /), 'A','none', &
+       'Q vapor variable - constituent vapor')
+  call addfld ('Q_LIQ_ML',(/ 'lev' /), 'A','none', &
+       'Q liquid variable - constituent liquid')
+  call addfld ('Q_ICE_ML',(/ 'lev' /), 'A','none', &
+       'Q ice variable - constituent ice')
+  call addfld ('S_ML',(/ 'lev' /), 'A','m2/s2', &
+       'S variable - dry static energy')
+  call addfld ('Zm_ML',(/ 'lev' /), 'A','m', &
+       'Zm variable - geopotential height')
+  call addfld ('PS_ML',horiz_only, 'A','Pa', &
+       'PS variable - surface pressure')
+  call addfld ('PHIS_ML',horiz_only, 'A','m2/s2', &
+       'PHIS variable - surface geopotential')
+
   if (masterproc) then
      write (iulog,*) 'using GW energy fix   =',use_gw_energy_fix
   end if
@@ -780,6 +802,10 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
 
   real(r8) :: dE(state%ncol)
 
+  ! Added for ML training
+  real(r8) :: ps(state%ncol)
+  real(r8) :: phis(state%ncol)
+
   ! local override option for constituents cnst_type
   character(len=3), dimension(pcnst) :: cnst_type_loc
 
@@ -810,6 +836,21 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   dpm = state1%pdel(:ncol,:)
   rdpm = state1%rpdel(:ncol,:)
   zm = state1%zm(:ncol,:)
+  ! Add for ML training
+  ps = state1%ps(:ncol)
+  phis = state1%phis(:ncol)
+
+  ! Output state variables for ML training
+  call outfld('U_ML', u,  ncol, lchnk)
+  call outfld ('V_ML', v, ncol, lchnk)
+  call outfld ('T_ML', t, ncol, lchnk)
+  call outfld('Q_VAP_ML', q(:,:,1), ncol, lchnk)
+  call outfld('Q_LIQ_ML', q(:,:,2), ncol, lchnk)
+  call outfld('Q_ICE_ML', q(:,:,3), ncol, lchnk)
+  call outfld ('S_ML', dse, ncol, lchnk)
+  call outfld ('Zm_ML', zm, ncol, lchnk)
+  call outfld ('PS_ML', ps, ncol, lchnk)
+  call outfld ('PHIS_ML', phis, ncol, lchnk)
 
   lq = .true.
   call physics_ptend_init(ptend, state1%psetcols, "Grav_wave_drag", &
