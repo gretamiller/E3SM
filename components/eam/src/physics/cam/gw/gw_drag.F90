@@ -116,8 +116,8 @@ module gw_drag
   integer :: frontga_idx  = -1
 
   ! Prefixes for history field names
-  character(len=1), parameter :: cm_pf = " "
-  character(len=1), parameter :: beres_pf = "B"
+  character(len=3), parameter :: cm_pf = "FRT"
+  character(len=3), parameter :: beres_pf = "CNV"
 
   ! namelist
   logical          :: history_amwg                   ! output the variables used by the AMWG diag package
@@ -419,17 +419,17 @@ subroutine gw_init(pbuf2d)
           'U tendency - orographic gravity wave drag')
      call addfld ('VTGWORO',(/ 'lev' /), 'A','m/s2', &
           'V tendency - orographic gravity wave drag')
-     call addfld ('TTGWORO_ML',(/ 'lev' /), 'A','K/s', &
+     call addfld ('ORO_TEND_T',(/ 'lev' /), 'A','K/s', &
           'T tendency - orographic gravity wave drag')
-     call addfld ('UTGWORO_ML',(/ 'lev' /), 'A','m/s2', &
+     call addfld ('ORO_TEND_U',(/ 'lev' /), 'A','m/s2', &
           'U tendency - orographic gravity wave drag')
-     call addfld ('VTGWORO_ML',(/ 'lev' /), 'A','m/s2', &
+     call addfld ('ORO_TEND_V',(/ 'lev' /), 'A','m/s2', &
           'V tendency - orographic gravity wave drag')
-     call addfld ('QTGWORO_VAP_ML',(/ 'lev' /), 'A','s-1', &
+     call addfld ('ORO_TEND_Q_VAP',(/ 'lev' /), 'A','s-1', &
              'Q vapor tendency - orographic gravity wave drag')
-     call addfld ('QTGWORO_LIQ_ML',(/ 'lev' /), 'A','s-1', &
+     call addfld ('ORO_TEND_Q_LIQ',(/ 'lev' /), 'A','s-1', &
              'Q liquid tendency - orographic gravity wave drag')
-     call addfld ('QTGWORO_ICE_ML',(/ 'lev' /), 'A','s-1', &
+     call addfld ('ORO_TEND_Q_ICE',(/ 'lev' /), 'A','s-1', &
              'Q ice tendency - orographic gravity wave drag')
      call addfld ('TAUGWX',horiz_only,    'A','N/m2', &
           'Zonal gravity wave surface stress')
@@ -571,25 +571,25 @@ subroutine gw_init(pbuf2d)
        'T tendency - gravity wave drag')
 
   ! State variables needed for ML training
-  call addfld ('U_ML',(/ 'lev' /), 'A','m/s', &
+  call addfld ('GW_STATE_U',(/ 'lev' /), 'A','m/s', &
        'U variable - zonal wind')
-  call addfld ('V_ML',(/ 'lev' /), 'A','m/s', &
+  call addfld ('GW_STATE_V',(/ 'lev' /), 'A','m/s', &
        'V variable - meridional wind')
-  call addfld ('T_ML',(/ 'lev' /), 'A','K', &
+  call addfld ('GW_STATE_T',(/ 'lev' /), 'A','K', &
        'T variable - temperature')
-  call addfld ('Q_VAP_ML',(/ 'lev' /), 'A','none', &
+  call addfld ('GW_STATE_Q_VAP',(/ 'lev' /), 'A','none', &
        'Q vapor variable - constituent vapor')
-  call addfld ('Q_LIQ_ML',(/ 'lev' /), 'A','none', &
+  call addfld ('GW_STATE_Q_LIQ',(/ 'lev' /), 'A','none', &
        'Q liquid variable - constituent liquid')
-  call addfld ('Q_ICE_ML',(/ 'lev' /), 'A','none', &
+  call addfld ('GW_STATE_Q_ICE',(/ 'lev' /), 'A','none', &
        'Q ice variable - constituent ice')
-  call addfld ('S_ML',(/ 'lev' /), 'A','m2/s2', &
+  call addfld ('GW_STATE_S',(/ 'lev' /), 'A','m2/s2', &
        'S variable - dry static energy')
-  call addfld ('Zm_ML',(/ 'lev' /), 'A','m', &
+  call addfld ('GW_STATE_Zm',(/ 'lev' /), 'A','m', &
        'Zm variable - geopotential height')
-  call addfld ('PS_ML',horiz_only, 'A','Pa', &
+  call addfld ('GW_STATE_PS',horiz_only, 'A','Pa', &
        'PS variable - surface pressure')
-  call addfld ('PHIS_ML',horiz_only, 'A','m2/s2', &
+  call addfld ('GW_STATE_PHIS',horiz_only, 'A','m2/s2', &
        'PHIS variable - surface geopotential')
 
   if (masterproc) then
@@ -841,16 +841,16 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   phis = state1%phis(:ncol)
 
   ! Output state variables for ML training
-  call outfld('U_ML', u,  ncol, lchnk)
-  call outfld ('V_ML', v, ncol, lchnk)
-  call outfld ('T_ML', t, ncol, lchnk)
-  call outfld('Q_VAP_ML', q(:,:,1), ncol, lchnk)
-  call outfld('Q_LIQ_ML', q(:,:,2), ncol, lchnk)
-  call outfld('Q_ICE_ML', q(:,:,3), ncol, lchnk)
-  call outfld ('S_ML', dse, ncol, lchnk)
-  call outfld ('Zm_ML', zm, ncol, lchnk)
-  call outfld ('PS_ML', ps, ncol, lchnk)
-  call outfld ('PHIS_ML', phis, ncol, lchnk)
+  call outfld('GW_STATE_U', u,  ncol, lchnk)
+  call outfld ('GW_STATE_V', v, ncol, lchnk)
+  call outfld ('GW_STATE_T', t, ncol, lchnk)
+  call outfld('GW_STATE_Q_VAP', q(:,:,1), ncol, lchnk)
+  call outfld('GW_STATE_Q_LIQ', q(:,:,2), ncol, lchnk)
+  call outfld('GW_STATE_Q_ICE', q(:,:,3), ncol, lchnk)
+  call outfld ('GW_STATE_S', dse, ncol, lchnk)
+  call outfld ('GW_STATE_Zm', zm, ncol, lchnk)
+  call outfld ('GW_STATE_PS', ps, ncol, lchnk)
+  call outfld ('GW_STATE_PHIS', phis, ncol, lchnk)
 
   lq = .true.
   call physics_ptend_init(ptend, state1%psetcols, "Grav_wave_drag", &
@@ -1062,8 +1062,8 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
       use_od_bl .or.&
       use_od_ss) then
 
-     call outfld('UTGWORO_ML', utgw,  ncol, lchnk)
-     call outfld('VTGWORO_ML', vtgw,  ncol, lchnk)
+     call outfld('ORO_TEND_U', utgw,  ncol, lchnk)
+     call outfld('ORO_TEND_V', vtgw,  ncol, lchnk)
 
      if(.not. use_gw_energy_fix) then
         !original
@@ -1125,10 +1125,11 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      call outfld('UTGWORO', utgw,  ncol, lchnk)
      call outfld('VTGWORO', vtgw,  ncol, lchnk)
      call outfld('TTGWORO', ttgw,  ncol, lchnk)
-     call outfld('TTGWORO_ML', ttgw_ml, ncol, lchnk)
-     call outfld('QTGWORO_VAP_ML', qtgw(:,:,1), ncol, lchnk)
-     call outfld('QTGWORO_LIQ_ML', qtgw(:,:,2), ncol, lchnk)
-     call outfld('QTGWORO_ICE_ML', qtgw(:,:,3), ncol, lchnk)
+
+     call outfld('ORO_TEND_T', ttgw_ml, ncol, lchnk)
+     call outfld('ORO_TEND_Q_VAP', qtgw(:,:,1), ncol, lchnk)
+     call outfld('ORO_TEND_Q_LIQ', qtgw(:,:,2), ncol, lchnk)
+     call outfld('ORO_TEND_Q_ICE', qtgw(:,:,3), ncol, lchnk)
      !
      if (use_gw_oro) then
      !old gwd scheme
@@ -1185,7 +1186,7 @@ subroutine gw_spec_addflds(prefix, scheme, history_waccm)
   !------------------------------Arguments--------------------------------
 
   ! One character prefix prepended to output fields.
-  character(len=1), intent(in) :: prefix
+  character(len=*), intent(in) :: prefix
   ! Gravity wave scheme name prepended to output field descriptions.
   character(len=*), intent(in) :: scheme
   ! Whether or not to call add_default for fields output by WACCM.
@@ -1210,21 +1211,21 @@ subroutine gw_spec_addflds(prefix, scheme, history_waccm)
        trim(scheme)//' V tendency - gravity wave spectrum')
 
   ! Wind tendencies for ML training.
-  call addfld (trim(prefix)//'UTGWSPEC_ML',(/ 'lev' /), 'A','m/s2', &
+  call addfld (trim(prefix)//'_TEND_U',(/ 'lev' /), 'A','m/s2', &
        trim(scheme)//' U tendency - gravity wave spectrum')
-  call addfld (trim(prefix)//'VTGWSPEC_ML',(/ 'lev' /), 'A','m/s2', &
+  call addfld (trim(prefix)//'_TEND_V',(/ 'lev' /), 'A','m/s2', &
        trim(scheme)//' V tendency - gravity wave spectrum')
 
   ! Temperature tendencies for ML training.
-  call addfld (trim(prefix)//'TTGWSPEC_ML',(/ 'lev' /), 'A','K/s', &
+  call addfld (trim(prefix)//'_TEND_T',(/ 'lev' /), 'A','K/s', &
        trim(scheme)//' T tendency - gravity wave spectrum')
 
   ! Constituens tendencies for ML training.
-  call addfld (trim(prefix)//'QTGWSPEC_VAP_ML',(/ 'lev' /), 'A','s-1', &
+  call addfld (trim(prefix)//'_TEND_Q_VAP',(/ 'lev' /), 'A','s-1', &
        trim(scheme)//' Q vapor tendency - gravity wave spectrum')
-  call addfld (trim(prefix)//'QTGWSPEC_LIQ_ML',(/ 'lev' /), 'A','s-1', &
+  call addfld (trim(prefix)//'_TEND_Q_LIQ',(/ 'lev' /), 'A','s-1', &
        trim(scheme)//' Q liquid tendency - gravity wave spectrum')
-  call addfld (trim(prefix)//'QTGWSPEC_ICE_ML',(/ 'lev' /), 'A','s-1', &
+  call addfld (trim(prefix)//'_TEND_Q_ICE',(/ 'lev' /), 'A','s-1', &
        trim(scheme)//' Q ice tendency - gravity wave spectrum')
 
   ! Wind tendencies broken across five spectral bins.
@@ -1315,7 +1316,7 @@ subroutine gw_spec_outflds(prefix, lchnk, ncol, ngwv, c, u, v, xv, yv, &
   use interpolate_data, only: vertinterp
 
   ! One-character prefix prepended to output fields.
-  character(len=1), intent(in) :: prefix
+  character(len=*), intent(in) :: prefix
   ! Chunk and number of columns in the chunk.
   integer, intent(in) :: lchnk
   integer, intent(in) :: ncol
@@ -1502,16 +1503,16 @@ subroutine gw_spec_outflds(prefix, lchnk, ncol, ngwv, c, u, v, xv, yv, &
   call outfld (trim(prefix)//'VTGWSPEC', vtgw , ncol, lchnk)
 
   ! Total wind tendencies for ML training.
-  call outfld (trim(prefix)//'UTGWSPEC_ML', utgw , ncol, lchnk)
-  call outfld (trim(prefix)//'VTGWSPEC_ML', vtgw , ncol, lchnk)
+  call outfld (trim(prefix)//'_TEND_U', utgw , ncol, lchnk)
+  call outfld (trim(prefix)//'_TEND_V', vtgw , ncol, lchnk)
 
   ! Temperature tendencies for ML training.
-  call outfld (trim(prefix)//'TTGWSPEC_ML', dttdf+dttke , ncol, lchnk)
+  call outfld (trim(prefix)//'_TEND_T', dttdf+dttke , ncol, lchnk)
        
   ! Constituents tendencies for ML training.
-  call outfld (trim(prefix)//'QTGWSPEC_VAP_ML', qtgw(:,:,1) , ncol, lchnk)
-  call outfld (trim(prefix)//'QTGWSPEC_LIQ_ML', qtgw(:,:,2) , ncol, lchnk)
-  call outfld (trim(prefix)//'QTGWSPEC_ICE_ML', qtgw(:,:,3) , ncol, lchnk)
+  call outfld (trim(prefix)//'_TEND_Q_VAP', qtgw(:,:,1) , ncol, lchnk)
+  call outfld (trim(prefix)//'_TEND_Q_LIQ', qtgw(:,:,2) , ncol, lchnk)
+  call outfld (trim(prefix)//'_TEND_Q_ICE', qtgw(:,:,3) , ncol, lchnk)
 
   ! Tau in each direction.
   call outfld (trim(prefix)//'TAUE', taucd(:,:,east), ncol, lchnk)
