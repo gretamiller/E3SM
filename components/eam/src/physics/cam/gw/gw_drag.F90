@@ -577,11 +577,11 @@ subroutine gw_init(pbuf2d)
        'V variable - meridional wind')
   call addfld ('GW_STATE_T',(/ 'lev' /), 'A','K', &
        'T variable - temperature')
-  call addfld ('GW_STATE_Q_VAP',(/ 'lev' /), 'A','none', &
+  call addfld ('GW_STATE_Q_VAP',(/ 'lev' /), 'A','kg/kg', &
        'Q vapor variable - constituent vapor')
-  call addfld ('GW_STATE_Q_LIQ',(/ 'lev' /), 'A','none', &
+  call addfld ('GW_STATE_Q_LIQ',(/ 'lev' /), 'A','kg/kg', &
        'Q liquid variable - constituent liquid')
-  call addfld ('GW_STATE_Q_ICE',(/ 'lev' /), 'A','none', &
+  call addfld ('GW_STATE_Q_ICE',(/ 'lev' /), 'A','kg/kg', &
        'Q ice variable - constituent ice')
   call addfld ('GW_STATE_S',(/ 'lev' /), 'A','m2/s2', &
        'S variable - dry static energy')
